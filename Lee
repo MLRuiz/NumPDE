@@ -1,0 +1,217 @@
+function [x,y,bbbb]=lee(filename)
+%
+% LEERED 
+% A brief description.
+% Funcion que lee la red inicial y obtiene los parametros asociados
+%        a la malla
+%
+% Entrada:
+%         No hay parametros de entrada
+%
+% Salida:
+%        il, jl   dimensiones de la red, enteros
+%        mn       numero total de nodos en la malla
+%        ibo      numero de nodos en la frontera
+%        n        numero de puntos interiores
+%        red      vector que contiene las coordenadas de la malla
+%        iflag    bandera de salida
+%                  0  todo estuvo correcto
+%                ~=0  hubo problemas de lectura 
+%                     o se ha cancelado la lectura
+%
+%
+%
+% Leered M-file is part of Unamalla System v. 2.0 for Matlab.
+% =============================================================
+%  This source code is dated at: Agust, 1999.
+%  Last Revision: November 26, 1999.
+% =============================================================
+%
+%
+% Unamalla System v. 2.0 for Matlab
+% An Automatic Grid Generation Package over General Plane Regions
+%
+% This system use the new functionals discrete to obtain
+% an optimal grid over very irregular planar regions.
+%
+% This version running succeful on Matlab 5.2 or upper
+%
+% Copyright(c) 1994-1999 by UNAMALLA Workgroup
+%
+%
+% Global variables
+%
+global WRED RED RED_filename
+%
+
+iflag =0;
+if nargin==0
+[file_red, path_red] = uigetfile('*.red', 'Mesh Files');
+if (file_red==0) 
+   iflag=1;
+   return
+end
+filename = [path_red file_red];
+end
+%
+% Clean the Information Mesh Window
+%
+%infomesh('Info off');
+
+fid=fopen(filename,'r');
+A=fscanf(fid,'%d',2);
+il=A(1);
+jl=A(2);
+name=fscanf(fid,'%s',1);
+mn=2*il*jl;
+RED=fscanf(fid,'%g',mn);
+status=fclose(fid);
+ibo=2*(2*il+2*jl-4);
+bbbb=[RED(1:2:ibo) RED(2:2:ibo)];
+n=2*(il-2)*(jl-2);
+%areatotal = carea(RED,ibo);
+%alfaprom = areatotal /((il-1.0) * (jl-1.0));
+
+if exist('dibuja'),
+    fifi=1;
+else
+    fifi=0;
+end
+[x,y]=graf1(il,jl,mn,n,ibo,RED,fifi);
+end
+
+
+function  [xx,yy]=graf1(il,jl,mn,n,ibo,red,iflag)
+%
+% GRAFRED 
+% A short description
+% This function display the mesh graphic over the current
+% window. Three shape can be obtain: Mesh shape, Mesh contour and
+% Mesh points. See Users' Guide for more details.
+%
+% Grafred M-file is part of Unamalla System v. 2.0 for Matlab.
+% Last Revision: Octuber 30, 1999.
+%
+%
+% Unamalla System v. 2.0 for Matlab
+% An Automatic Grid Generation Package over General Plane Regions
+%
+% This system use the new functionals discrete to obtain
+% an optimal grid over very irregular planar regions.
+%
+% This version running succeful on Matlab 5.2 or upper
+%
+% Copyright(c) 1994-1999 by UNAMALLA Workgroup
+%
+%
+% Body function
+%
+
+fabajo = red(1:2*il);
+fderecha = red(2*il-1:2*il+2*jl-2);
+farriba = red(2*il+2*jl-3:ibo-2*(jl-1)+2);
+fizquierda = red(ibo-2*(jl-1)+1:ibo);
+fizquierda=[fizquierda; red(1); red(2)];
+%
+% Obtenemos las coordenadas de las fronteras correspondientes
+% al eje x y al eje y.
+%
+fabx= fabajo(1:2:2*il);
+faby= fabajo(2:2:2*il);
+fderx= fderecha(1:2:2*jl);
+fdery= fderecha(2:2:2*jl);
+farrx = farriba(1:2:2*il);
+farry = farriba(2:2:2*il);
+fizqx = fizquierda(1:2:2*jl);
+fizqy = fizquierda(2:2:2*jl);
+
+%
+% Obtenemos los puntos interiores de la malla y los acomodamos
+% en una matriz, luego le agregamos los puntos a la frontera
+% y graficamos con lineas para formar la malla.
+%
+inter=red(ibo+1:mn);
+xx=(reshape(inter(1:2:n),jl-2,il-2));
+yy=(reshape(inter(2:2:n),jl-2,il-2));
+xx=[fabx'; flipud(fizqx(2:jl-1)) xx fderx(2:jl-1); fliplr(farrx')];
+yy=[faby'; flipud(fizqy(2:jl-1)) yy (fdery(2:jl-1)); fliplr(farry')];
+xx=flipud(xx);
+yy=flipud(yy);
+minx=min(min(xx)); %-0.25;
+maxx=max(max(xx)); %+0.25;
+miny=min(min(yy)); %-0.25;
+maxy=max(max(yy)); %+0.25;
+a=0.1;
+b=0.1;
+fff=max(maxx-minx,maxy-miny);
+xx=(xx-minx)/fff;
+yy=(yy-miny)/fff;
+switch iflag   
+case 1,   % Toda la malla
+    axis('square');
+    cla; % limpiamos el area de graficacion
+    axis off
+    axis([minx maxx miny maxy])
+     f0=line(xx,yy);
+     set(f0,'LineWidth',b);
+     set(f0,'Color','black') 
+     f0=line(xx',yy');
+     set(f0,'LineWidth',b);
+     set(f0,'Color','black')
+% 
+% Llamamos la rutina que dibuja las celdas no convexas 
+% de la malla y nos devuelve el valor del area minima de una 
+% celda de la malla. 
+% 
+%     noconv1;
+%[alfamin,alfamax,inocon,noi,noj] = nonij(mn, ibo, il, jl, red); 
+%rednonc(ibo,il,jl, red, noi, noj, inocon);
+%clear noi, noj;
+%
+%
+%
+% Pintamos de amarillo la frontera de abajo
+%
+f1=line(fabx,faby);
+set(f1,'LineWidth',a);
+set(f1,'Color','black')
+%
+% Pintamos de amarillo la frontera de la derecha
+%
+
+f2=line(fderx,fdery);
+set(f2,'LineWidth',a);
+set(f2,'Color','black')
+%
+% Pintamos de azul la frontera de arriba
+%
+
+f3=line(farrx,farry);
+set(f3,'LineWidth',a);
+set(f3,'Color','black')
+%
+% Pintamos de amarillo la frontera de la izquierda
+%
+
+f4=line(fizqx,fizqy);
+set(f4,'LineWidth',a);
+set(f4,'Color','black')
+drawnow;
+  case 2,   % Solo los puntos
+     plot(xx,yy,'*',...
+     'MarkerEdgeColor','g',...
+     'MarkerFaceColor','g',...
+     'MarkerSize',2);
+     inocon=0;
+     alfamin=0;
+  case 3,
+     inocon=0;
+     alfamin=0;
+  end
+
+
+
+%
+% Ultima instruccion de GRAFRED
+%
+end
