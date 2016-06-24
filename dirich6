@@ -1,0 +1,118 @@
+% Aproxima ecuaciones diferenciales parciales mediante el operador
+% Lu = AUxx + BUxy + CUyy + DUx + EUy + Fu = sum(Gamma_i U_i) 
+function [U,K,RHS]=dirich6(x,y,f,g,A,B,C,D,E,F)
+%heurístico
+[m,n]=size(x);K=sparse((m-2)*(n-2),(m-2)*(n-2));RHS=sparse((m-2)*(n-2),1);
+
+%Llenado de las ecuaciones que no son contiguas a fronteras
+for i=3:(m-2)
+    for j=3:(n-2)
+            u=x((i-1):(i+1),(j-1):(j+1));v=y((i-1):(i+1),(j-1):(j+1));
+            I=setdiff(1:9,5);
+            dx=u(I)-u(5);dy=v(I)-v(5);
+            M=[dx;dy;dx.*dx;dx.*dy;dy.*dy];
+            Gamma=pinv(M)*[D E 2*A B 2*C]';
+            Gamma=[F-sum(Gamma);Gamma];
+            p=(m-2)*(j-2)+(i-1);
+            K(p,(p-1):(p+1))=[Gamma(5) Gamma(1) Gamma(6)];
+            K(p,[(p-1):(p+1)]-(m-2))=[Gamma(2) Gamma(3) Gamma(4)];
+            K(p,[(p-1):(p+1)]+(m-2))=[Gamma(7) Gamma(8) Gamma(9)];
+            RHS(p)=RHS(p)+f([x(i,j),y(i,j)]);  
+            Gamma=[];
+    end
+end
+Gamma=[];
+%Ecuaciones contiguas a fronteras
+%Frontera vertical
+for i=2:(m-1)
+            p=(i-1);
+	        u=x((i-1):(i+1),1:3);v=y((i-1):(i+1),1:3);
+            I=setdiff(1:9,5);
+            dx=u(I)-u(5);dy=v(I)-v(5);
+            M=[dx;dy;dx.*dx;dx.*dy;dy.*dy];            
+            Gamma=pinv(M)*[D E 2*A B 2*C]'; %%Esta es la clave
+            Gamma=[F-sum(Gamma);Gamma];
+	        RHS(p)=RHS(p)-Gamma(2)*g([x(i-1,1),y(i-1,1)])...
+                -Gamma(3)*g([x(i,1),y(i,1)])-Gamma(4)*g([x(i+1,1),y(i+1,1)]);
+            RHS(p)=RHS(p)+f([x(i,j),y(i,j)]); 
+	if (i==2),
+	RHS(p)=RHS(p)-Gamma(5)*g([x(i-1,2),y(i-1,2)])-Gamma(7)*g([x(i-1,3),y(i-1,3)]);
+	K(p,(p):(p+1))=[Gamma(1) Gamma(6)];
+    K(p,[(p):(p+1)]+(m-2))=[Gamma(8) Gamma(9)];
+	elseif (i==(m-1)),
+	RHS(p)=RHS(p)-Gamma(6)*g([x(i+1,2),y(i+1,2)])-Gamma(9)*g([x(i+1,3),y(i+1,3)]);
+	K(p,(p-1):(p))=[Gamma(5) Gamma(1)];
+    K(p,[(p-1):(p)]+(m-2))=[Gamma(7) Gamma(8)];
+	else 
+	K(p,(p-1):(p+1))=[Gamma(5) Gamma(1) Gamma(6)];
+    K(p,[(p-1):(p+1)]+(m-2))=[Gamma(7) Gamma(8) Gamma(9)];
+	end
+	
+    Gamma=[];
+%%%
+
+	p=(m-2)*((n-1)-2)+(i-1);
+	u=x((i-1):(i+1),(n-2):n);v=y((i-1):(i+1),(n-2):n);
+            I=setdiff(1:9,5);
+            dx=u(I)-u(5);dy=v(I)-v(5);
+            M=[dx;dy;dx.*dx;dx.*dy;dy.*dy];
+            Gamma=pinv(M)*[D E 2*A B 2*C]';
+            Gamma=[F-sum(Gamma);Gamma];
+	RHS(p)=RHS(p)-Gamma(7)*g([x(i-1,n),y(i-1,n)])...
+                -Gamma(8)*g([x(i,n),y(i,n)])-Gamma(9)*g([x(i+1,n),y(i+1,n)]);
+RHS(p)=RHS(p)+f([x(i,j),y(i,j)]); 
+	if (i==2),
+	RHS(p)=RHS(p)-Gamma(5)*g([x(i-1,n-1),y(i-1,n-1)])-Gamma(2)*g([x(i-1,n-2),y(i-1,n-2)]);
+	K(p,(p):(p+1))=[Gamma(1) Gamma(6)];
+    K(p,[(p):(p+1)]-(m-2))=[Gamma(3) Gamma(4)];
+	elseif (i==(m-1)),
+	RHS(p)=RHS(p)-Gamma(6)*g([x(i+1,n-1),y(i+1,n-1)])-Gamma(4)*g([x(i+1,n-2),y(i+1,n-2)]);
+	K(p,(p-1):(p))=[Gamma(5) Gamma(1)];
+    K(p,[(p-1):(p)]-(m-2))=[Gamma(2) Gamma(3)];
+	else 
+	K(p,(p-1):(p+1))=[Gamma(5) Gamma(1) Gamma(6)];
+    K(p,[(p-1):(p+1)]-(m-2))=[Gamma(2) Gamma(3) Gamma(4)];
+	end
+	
+    Gamma=[];
+end
+%Frontera horizontal
+for j=3:(n-2)
+            p=(m-2)*(j-2)+(2-1);
+	u=x((1):(3),(j-1):(j+1));v=y((1):(3),(j-1):(j+1));
+            I=setdiff(1:9,5);
+            dx=u(I)-u(5);dy=v(I)-v(5);
+            M=[dx;dy;dx.*dx;dx.*dy;dy.*dy];
+            Gamma=pinv(M)*[D E 2*A B 2*C]';
+            Gamma=[F-sum(Gamma);Gamma];
+	    RHS(p)=RHS(p)-Gamma(2)*g([x(1,j-1),y(1,j-1)])...
+            -Gamma(5)*g([x(1,j),y(1,j)])-Gamma(7)*g([x(1,j+1),y(1,j+1)]); 
+    RHS(p)=RHS(p)+f([x(i,j),y(i,j)]); 
+	K(p,(p):(p+1))=[Gamma(1) Gamma(6)];
+	K(p,[(p):(p+1)]+(m-2))=[Gamma(8) Gamma(9)];
+	K(p,[(p):(p+1)]-(m-2))=[Gamma(3) Gamma(4)];
+    Gamma=[];
+
+%%%
+	p=(m-2)*(j-2)+((m-1)-1);
+	u=x((m-2):(m),(j-1):(j+1));v=y((m-2):(m),(j-1):(j+1));
+            I=setdiff(1:9,5);
+            dx=u(I)-u(5);dy=v(I)-v(5);
+            M=[dx;dy;dx.*dx;dx.*dy;dy.*dy];
+            Gamma=pinv(M)*[D E 2*A B 2*C]';
+            Gamma=[F-sum(Gamma);Gamma];
+	 RHS(p)=RHS(p)-Gamma(4)*g([x(m,j-1),y(m,j-1)])...
+            -Gamma(6)*g([x(m,j),y(m,j)])-Gamma(9)*g([x(m,j+1),y(m,j+1)]); 
+    RHS(p)=RHS(p)+f([x(i,j),y(i,j)]); 
+	K(p,(p-1):(p))=[Gamma(5) Gamma(1)];
+	K(p,[(p-1):(p)]+(m-2))=[Gamma(7) Gamma(8)];
+	K(p,[(p-1):(p)]-(m-2))=[Gamma(2) Gamma(3)];
+    Gamma=[];
+end
+
+%Soluci'on
+U(:,1)=g([x(:,1) y(:,1)]);
+U(:,n)=g([x(:,n) y(:,n)]);
+U(1,:)=[g([x(1,:)' y(1,:)'])]';
+U(m,:)=[g([x(m,:)' y(m,:)'])]';
+U(2:(m-1),2:(n-1))=reshape(K\RHS,m-2,n-2);
