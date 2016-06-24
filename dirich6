@@ -1,8 +1,9 @@
 % Aproxima ecuaciones diferenciales parciales mediante el operador
 % Lu = AUxx + BUxy + CUyy + DUx + EUy + Fu = sum(Gamma_i U_i) 
 function [U,K,RHS]=dirich6(x,y,f,g,A,B,C,D,E,F)
-%heurístico
-[m,n]=size(x);K=sparse((m-2)*(n-2),(m-2)*(n-2));RHS=sparse((m-2)*(n-2),1);
+[m,n]=size(x);
+K=sparse((m-2)*(n-2),(m-2)*(n-2));
+RHS=sparse((m-2)*(n-2),1);
 
 %Llenado de las ecuaciones que no son contiguas a fronteras
 for i=3:(m-2)
@@ -47,10 +48,7 @@ for i=2:(m-1)
 	K(p,(p-1):(p+1))=[Gamma(5) Gamma(1) Gamma(6)];
     K(p,[(p-1):(p+1)]+(m-2))=[Gamma(7) Gamma(8) Gamma(9)];
 	end
-	
     Gamma=[];
-%%%
-
 	p=(m-2)*((n-1)-2)+(i-1);
 	u=x((i-1):(i+1),(n-2):n);v=y((i-1):(i+1),(n-2):n);
             I=setdiff(1:9,5);
@@ -73,7 +71,6 @@ RHS(p)=RHS(p)+f([x(i,j),y(i,j)]);
 	K(p,(p-1):(p+1))=[Gamma(5) Gamma(1) Gamma(6)];
     K(p,[(p-1):(p+1)]-(m-2))=[Gamma(2) Gamma(3) Gamma(4)];
 	end
-	
     Gamma=[];
 end
 %Frontera horizontal
@@ -92,7 +89,6 @@ for j=3:(n-2)
 	K(p,[(p):(p+1)]+(m-2))=[Gamma(8) Gamma(9)];
 	K(p,[(p):(p+1)]-(m-2))=[Gamma(3) Gamma(4)];
     Gamma=[];
-
 %%%
 	p=(m-2)*(j-2)+((m-1)-1);
 	u=x((m-2):(m),(j-1):(j+1));v=y((m-2):(m),(j-1):(j+1));
@@ -109,7 +105,6 @@ for j=3:(n-2)
 	K(p,[(p-1):(p)]-(m-2))=[Gamma(2) Gamma(3)];
     Gamma=[];
 end
-
 %Soluci'on
 U(:,1)=g([x(:,1) y(:,1)]);
 U(:,n)=g([x(:,n) y(:,n)]);
